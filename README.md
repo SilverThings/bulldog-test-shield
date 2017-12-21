@@ -1,11 +1,10 @@
 # bulldog-test-shield
 A testing shield for Bulldog testing for mocking real-world devices
 
+Repository for .ino files, KiCad files, docs ...
 
-Repository for .ino files, KiCad files ... 
 
-
-#Prototype
+# Prototype
 
 Arduino Pro Mini clone BTE130-010 (3v3)
 

@@ -6,7 +6,7 @@ Repository for .ino files, KiCad files, docs ...
 
 # Prototype
 
-Arduino Pro Mini clone BTE130-010 (3v3)
+Arduino Pro Mini clone BTE13-010 (3v3)
 
 ![prototype full](https://raw.githubusercontent.com/SilverThings/bulldog-test-shield/master/documents/img/prototype_v1/1.jpg)
 ![prototype board](https://raw.githubusercontent.com/SilverThings/bulldog-test-shield/master/documents/img/prototype_v1/2.jpg)

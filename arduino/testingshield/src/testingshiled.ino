@@ -7,6 +7,7 @@
 #define COMMAND_MODE_OUT 0b01010000
 #define COMMAND_WRITE    0b00100000
 #define COMMAND_READ     0b00010001
+#define COMMAND_NOOP     0b00010101
 
 #define COMMAND_RESET    0b00000111
 
@@ -70,6 +71,9 @@ void receiveData(int byteCount)
       case COMMAND_READ:
 	dataToSend[0] = digitalRead(received[1]);
 	break;
+
+      case COMMAND_NOOP:
+        dataToSend[0] = 1;
 
       default:
 	break;

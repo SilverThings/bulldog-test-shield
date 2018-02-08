@@ -73,7 +73,7 @@ void receiveData(int byteCount)
 	break;
 
       case COMMAND_NOOP:
-        dataToSend[0] = 1;
+        dataToSend[0] = 0b1;
 
       default:
 	break;

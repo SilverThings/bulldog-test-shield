@@ -20,9 +20,10 @@ int receivedLength = 0;
 int number = 0;
 int state = 0;
 
-void setup() 
+void setup()
 {
   //pinMode(13, OUTPUT);
+  Serial.begin(9600); // deubg
 
   Wire.begin(SLAVE_ADDRESS);
 
@@ -39,8 +40,9 @@ void loop()
 // callback for received data
 void receiveData(int byteCount)
 {
+  Serial.println("receiveData");
   receivedLength = 0;
-  memset(received, 0, sizeof(received)); 
+  memset(received, 0, sizeof(received));
   while(Wire.available())
   {
     byte b = Wire.read();
@@ -56,23 +58,28 @@ void receiveData(int byteCount)
   {
     switch(received[0]){
       case COMMAND_MODE_IN:
+      Serial.println("COMMAND_MODE_IN");
 	  pinMode(received[1], INPUT);
 	break;
 
       case COMMAND_MODE_OUT:
+      Serial.println("COMMAND_MODE_OUT");
 	  pinMode(received[1], OUTPUT);
 	break;
-     
+
       case COMMAND_WRITE:
+      Serial.println("COMMAND_WRITE");
 	  if(received[2]) digitalWrite(received[1], HIGH);
 	  else digitalWrite(received[1], LOW);
 	break;
 
       case COMMAND_READ:
+      Serial.println("COMMAND_READ");
 	dataToSend[0] = digitalRead(received[1]);
 	break;
 
       case COMMAND_NOOP:
+      Serial.println("COMMAND_NOOP");
         dataToSend[0] = 0b1;
 
       default:
@@ -84,6 +91,8 @@ void receiveData(int byteCount)
 // callback for sending data
 void sendData()
 {
+  Serial.println("sendData");
+
   Wire.write(dataToSend, sizeof(dataToSend));
 }
 

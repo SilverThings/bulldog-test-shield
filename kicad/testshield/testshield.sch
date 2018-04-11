@@ -189,9 +189,9 @@ F 3 "" H 5400 5600 50  0001 C CNN
 	1    5400 5600
 	-1   0    0    1   
 $EndComp
-Text Label 5150 3500 2    60   ~ 0
+Text Label 5300 3500 2    60   ~ 0
 SDA
-Text Label 5150 3600 2    60   ~ 0
+Text Label 5300 3600 2    60   ~ 0
 SCL
 Text Label 6750 2700 0    60   ~ 0
 SCL
@@ -210,56 +210,26 @@ GND
 Wire Wire Line
 	2700 2850 3050 2850
 Wire Wire Line
-	2700 1950 2700 2250
-Wire Wire Line
-	2700 2250 2700 2550
-Wire Wire Line
-	2700 2550 2700 2850
-Wire Wire Line
-	2700 2850 2700 3500
+	2700 1950 2700 3500
 Wire Wire Line
 	2700 2550 3050 2550
 Wire Wire Line
-	2200 2250 2700 2250
-Wire Wire Line
-	2700 2250 3050 2250
+	2200 2250 3050 2250
 Connection ~ 2700 2550
 Connection ~ 2700 2250
 Wire Wire Line
 	3050 4450 2700 4450
 Wire Wire Line
-	2700 3800 2700 4450
+	2700 3800 2700 5000
 Wire Wire Line
-	2700 4450 2700 4550
-Wire Wire Line
-	2700 4550 2700 5000
-Wire Wire Line
-	2200 4550 2700 4550
-Wire Wire Line
-	2700 4550 3050 4550
+	2200 4550 3050 4550
 Connection ~ 2700 4550
 Connection ~ 2700 2850
 Connection ~ 2700 4450
 Wire Wire Line
-	6950 3000 6600 3000
+	6950 3000 6650 3000
 Wire Wire Line
-	6600 3000 6600 3200
-Wire Wire Line
-	6600 3200 5450 3200
-Wire Wire Line
-	5450 3200 5450 3400
-Wire Wire Line
-	5450 3400 4950 3400
-Wire Wire Line
-	7450 4000 7700 4000
-Wire Wire Line
-	7700 4000 7700 4600
-Wire Wire Line
-	7700 4600 6600 4600
-Wire Wire Line
-	6600 4600 6600 4150
-Wire Wire Line
-	6600 4150 4950 4150
+	5300 3400 4950 3400
 Wire Wire Line
 	7700 5600 7950 5600
 Wire Wire Line
@@ -271,13 +241,11 @@ Wire Wire Line
 Wire Wire Line
 	2200 3800 2200 4550
 Wire Wire Line
-	5350 850  5350 750 
-Wire Wire Line
 	5100 5600 5250 5600
 Wire Wire Line
-	4950 3500 5150 3500
+	4950 3500 5300 3500
 Wire Wire Line
-	4950 3600 5150 3600
+	4950 3600 5300 3600
 Wire Wire Line
 	6950 2600 6750 2600
 Wire Wire Line
@@ -340,30 +308,28 @@ Text Label 7650 3600 2    60   ~ 0
 SS
 Wire Wire Line
 	7650 3600 7450 3600
-Text Label 5150 2450 2    60   ~ 0
+Text Label 5300 2450 2    60   ~ 0
 SS
 Wire Wire Line
-	5150 2450 4950 2450
+	5300 2450 4950 2450
 Wire Wire Line
 	6700 5050 6700 5300
 Wire Wire Line
-	6250 5600 6700 5600
-Wire Wire Line
-	6700 5600 6850 5600
+	6250 5600 6850 5600
 Connection ~ 6700 5600
 Text Label 6250 5600 0    60   ~ 0
 RST
-Text Label 5150 3700 2    60   ~ 0
+Text Label 5300 3700 2    60   ~ 0
 RST
 Text Label 7650 3700 2    60   ~ 0
 RST
 Wire Wire Line
 	7650 3700 7450 3700
 Wire Wire Line
-	5150 3700 4950 3700
+	5300 3700 4950 3700
 Wire Wire Line
-	4950 2750 5150 2750
-Text Label 5150 2750 2    60   ~ 0
+	4950 2750 5300 2750
+Text Label 5300 2750 2    60   ~ 0
 SCK
 Wire Wire Line
 	4800 5600 4550 5600
@@ -373,14 +339,14 @@ Wire Wire Line
 	6950 3600 6750 3600
 Text Label 6750 3600 0    60   ~ 0
 SCK
-Text Label 5150 2550 2    60   ~ 0
+Text Label 5300 2550 2    60   ~ 0
 MOSI
-Text Label 5150 2650 2    60   ~ 0
+Text Label 5300 2650 2    60   ~ 0
 MISO
 Wire Wire Line
-	4950 2650 5150 2650
+	4950 2650 5300 2650
 Wire Wire Line
-	5150 2550 4950 2550
+	5300 2550 4950 2550
 Wire Wire Line
 	6950 3400 6750 3400
 Wire Wire Line
@@ -393,16 +359,14 @@ Text Label 7650 2800 2    60   ~ 0
 TX
 Text Label 7650 2900 2    60   ~ 0
 RX
-Text Notes 8500 2250 2    60   ~ 0
-TX / RX based on Raspberry Pi pins
-Text Label 5150 3850 2    60   ~ 0
+Text Label 5300 3850 2    60   ~ 0
 TX
-Text Label 5150 3950 2    60   ~ 0
+Text Label 5300 3950 2    60   ~ 0
 RX
 Wire Wire Line
-	5150 3950 4950 3950
+	5300 3950 4950 3950
 Wire Wire Line
-	5150 3850 4950 3850
+	5300 3850 4950 3850
 Wire Wire Line
 	7650 2800 7450 2800
 Wire Wire Line
@@ -453,4 +417,66 @@ F 3 "" H 9400 3200 50  0000 C CNN
 	1    9400 3200
 	1    0    0    -1  
 $EndComp
+Wire Wire Line
+	4950 3200 5300 3200
+Text Label 5300 3200 2    60   ~ 0
+PWM
+Text Label 5300 3400 2    60   ~ 0
+GPIO17
+Text Label 6650 3000 0    60   ~ 0
+GPIO17
+Text Label 7800 3200 2    60   ~ 0
+GPIO23
+Text Label 5300 3300 2    60   ~ 0
+GPIO23
+Wire Wire Line
+	7450 3200 7800 3200
+Wire Wire Line
+	4950 3300 5300 3300
+Text Notes 8500 2250 2    60   ~ 0
+TX / RX based on Raspberry Pi pins
+Wire Wire Line
+	1550 6250 1900 6250
+Wire Wire Line
+	1550 6700 1900 6700
+Text Label 1550 6250 0    60   ~ 0
+SDA
+Text Label 1550 6700 0    60   ~ 0
+SCL
+$Comp
+L R R?
+U 1 1 5ACE28B0
+P 2050 6250
+F 0 "R?" V 2130 6250 50  0000 C CNN
+F 1 "2K7" V 2050 6250 50  0000 C CNN
+F 2 "" V 1980 6250 50  0000 C CNN
+F 3 "" H 2050 6250 50  0000 C CNN
+	1    2050 6250
+	0    1    1    0   
+$EndComp
+$Comp
+L R R?
+U 1 1 5ACE28ED
+P 2050 6700
+F 0 "R?" V 2130 6700 50  0000 C CNN
+F 1 "2K7" V 2050 6700 50  0000 C CNN
+F 2 "" V 1980 6700 50  0000 C CNN
+F 3 "" H 2050 6700 50  0000 C CNN
+	1    2050 6700
+	0    1    1    0   
+$EndComp
+Wire Wire Line
+	2200 6250 2450 6250
+Wire Wire Line
+	2200 6700 2450 6700
+Text Label 2450 6250 2    60   ~ 0
+3V3
+Text Label 2450 6700 2    60   ~ 0
+3V3
+Text Notes 1300 6000 0    60   ~ 0
+Pull-up resistors for i2c lines\n
+Text Notes 5350 1100 0    60   ~ 0
+Programming header
+Text Notes 9150 2900 0    60   ~ 0
+Power
 $EndSCHEMATC

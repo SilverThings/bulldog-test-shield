@@ -1,4 +1,4 @@
-update=St 11. duben 2018, 11:55:26 CEST
+update=Čt 12. duben 2018, 18:00:35 CEST
 version=1
 last_client=kicad
 [pcbnew]
@@ -27,7 +27,7 @@ NetIExt=net
 version=1
 [eeschema]
 version=1
-LibDir=
+LibDir=/home/petr/Documents/ATMEGA328P-AU
 [eeschema/libraries]
 LibName1=testshield-rescue
 LibName2=power
@@ -62,3 +62,4 @@ LibName30=opto
 LibName31=atmel
 LibName32=contrib
 LibName33=valves
+LibName34=ATMEGA328P-AU

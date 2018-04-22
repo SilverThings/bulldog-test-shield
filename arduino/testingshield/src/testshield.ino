@@ -1,3 +1,4 @@
+// libraries
 #include <Wire.h>
 
 // REGISTERS              MASTER	SLAVE
@@ -54,6 +55,7 @@ byte id = 0x55;         // device id
 byte i2cAddress = 0x04; // device i2c address
 byte version = 0x01;    // firmware version
 
+
 //globals
 byte received[MAX_SENT_BYTES]; // received command
 
@@ -67,12 +69,17 @@ byte receiveRegFlags = 0;
 
 
 
+
+unsigned long currentMillis = 0; // stores value of millis()
+
+
+
 //function definitions
 void receiveEvent(int bytes);
 void requestEvent();
 void updateWorkingReg();
 void updateTransmissionReg();
-
+void updateBuiltinLed();
 
 //initialization
 void setup(){
@@ -90,7 +97,10 @@ void setup(){
   Wire.onRequest(requestEvent);
   Wire.onReceive(receiveEvent);
 
+
+  // setup pins
   pinMode(LED_BUILTIN, OUTPUT);
+  analogReadResolution(8);
 
   if(DEBUG){
     pinMode(LED_BUILTIN, OUTPUT);
@@ -100,30 +110,66 @@ void setup(){
 }
 
 void loop(){
-  if(DEBUG){
-    digitalWrite(LED_BUILTIN, HIGH);
-    Serial.print(".");
-    delay(500);
-    digitalWrite(LED_BUILTIN, LOW);
-  }
+  currentMillis = millis(); // update current time
+  updateBuiltinLed();
 
    
   if(receiveRegFlags){
-    if(DEBUG) Serial.println("flags");
     updateWorkingReg();
     if(receiveRegFlags) updateTransmissionReg();
     return;
   }
   
-  if(transmissionReg[MODE] == DIGITAL_OUTPUT){
-     pinMode(transmissionReg[PIN_NO], OUTPUT);
-     digitalWrite(transmissionReg[PIN_NO], transmissionReg[PIN_VALUE]);
+    
+  if (workingReg[STATUS] == NEW_COMMANDS)){
+  switch(transmissionReg[MODE]){
+    case DIGITAL_OUTPUT:
+      pinMode(transmissionReg[PIN_NO], OUTPUT);
+      digitalWrite(transmissionReg[PIN_NO], transmissionReg[PIN_VALUE]);
+    break;
+    case DIGITAL_INPUT:
+      pinMode(transmissionReg[PIN_NO], INPUT);
+      workingReg[PIN_VALUE] = digitalRead(transmissionReg[PIN_NO]);
+    break;
+    case ANALOG_OUTPUT:
+      analogWrite(workingReg[PIN_NO], workingReg[PIN_VALUE]);
+    break;
+    case ANALOG_INPUT:
+      workingReg[PIN_VALUE] = analogRead(workingReg[PIN_NUMBER]);
+    break;
+    default:
+    break;
+
+  }
+  workingReg[STATUS] == NEW_DATA;
   }
 
-  digitalWrite(LED_BUILTIN, HIGH);
-  delay(50);
-  digitalWrite(LED_BUILTIN, LOW);
-  delay(25);
+  if(transmissionReg[MODE] == DIGITAL_OUTPUT){
+  }
+  else if(transmissionReg[MODE] == DIGITAL_INPUT){
+  }
+  
+}
+
+void updateBuiltinLed(){
+  static byte state = LOW;
+  static unsigned long previousMillis = 0;
+  static int interval = 1000;
+  static int duration = 1000;
+
+  if(state == LOW){
+    if(currentMillis - previousMillis >= interval){
+      state = HIGH;
+      previousMillis += interval;
+      digitalWrite(LED_BUILTIN, state);
+    }
+  } else { // state == HIGH
+    if(currentMillis - previousMillis >= duration){
+      state = LOW;
+      previousMillis += duration;
+      digitalWrite(LED_BUILTIN, state);
+    }
+  }
 }
 
 void updateWorkingReg(){

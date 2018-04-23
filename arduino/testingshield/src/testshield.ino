@@ -2,7 +2,7 @@
 #include <Wire.h>
 
 // REGISTERS              MASTER	SLAVE
-#define STATUS    0x00 // R		RW
+#define STATUS    0x00 // R		  RW
 #define MODE      0x01 // RW		R
 #define PIN_NO    0x02 // RW		R
 #define PIN_VALUE 0x03 // RW		RW
@@ -37,7 +37,7 @@ byte regMasks[]{
 #define NEW_COMMANDS  0x11
 #define NEW_DATA      0x12
 #define IDLE          0x13
-#define BUSY	      0x14
+#define BUSY	        0x14
 
 // mode register values
 #define NO_MODE        0x20
@@ -100,7 +100,12 @@ void setup(){
 
   // setup pins
   pinMode(LED_BUILTIN, OUTPUT);
-  analogReadResolution(8);
+
+  pinMode(6,OUTPUT);//debug
+  digitalWrite(6,LOW);
+
+  pinMode(5,OUTPUT);//debug
+  digitalWrite(5,LOW);
 
   if(DEBUG){
     pinMode(LED_BUILTIN, OUTPUT);
@@ -116,46 +121,66 @@ void loop(){
    
   if(receiveRegFlags){
     updateWorkingReg();
-    if(receiveRegFlags) updateTransmissionReg();
+    workingReg[STATUS] = NEW_COMMANDS;
+    workingRegFlags |= regMasks[STATUS];
     return;
   }
   
     
-  if (workingReg[STATUS] == NEW_COMMANDS)){
-  switch(transmissionReg[MODE]){
-    case DIGITAL_OUTPUT:
-      pinMode(transmissionReg[PIN_NO], OUTPUT);
-      digitalWrite(transmissionReg[PIN_NO], transmissionReg[PIN_VALUE]);
-    break;
-    case DIGITAL_INPUT:
-      pinMode(transmissionReg[PIN_NO], INPUT);
-      workingReg[PIN_VALUE] = digitalRead(transmissionReg[PIN_NO]);
-    break;
-    case ANALOG_OUTPUT:
-      analogWrite(workingReg[PIN_NO], workingReg[PIN_VALUE]);
-    break;
-    case ANALOG_INPUT:
-      workingReg[PIN_VALUE] = analogRead(workingReg[PIN_NUMBER]);
-    break;
-    default:
-    break;
+  if (workingReg[STATUS] == NEW_COMMANDS){
+    switch(workingReg[MODE]){
+      case DIGITAL_OUTPUT:
+        pinMode(workingReg[PIN_NO], OUTPUT);
+        digitalWrite(workingReg[PIN_NO], workingReg[PIN_VALUE]);
+        workingReg[STATUS] = IDLE;
+        workingRegFlags |= regMasks[STATUS];
+      break;
 
-  }
-  workingReg[STATUS] == NEW_DATA;
-  }
+      case DIGITAL_INPUT:
+        pinMode(workingReg[PIN_NO], INPUT);
+        workingReg[PIN_VALUE] = digitalRead(workingReg[PIN_NO]);
+        workingRegFlags |= regMasks[PIN_VALUE];
+        workingReg[STATUS] = NEW_DATA;
+        workingRegFlags |= regMasks[STATUS];
+      break;
 
-  if(transmissionReg[MODE] == DIGITAL_OUTPUT){
-  }
-  else if(transmissionReg[MODE] == DIGITAL_INPUT){
+      case ANALOG_OUTPUT:
+        analogWrite(workingReg[PIN_NO], workingReg[PIN_VALUE]);
+        workingReg[STATUS] = IDLE;
+        workingRegFlags |= regMasks[STATUS];
+      break;
+
+      case ANALOG_INPUT:
+        workingReg[PIN_VALUE] = (byte) (analogRead(workingReg[PIN_NO]) >> 2); // analogRead returns 10bit int, shift this by two
+        workingRegFlags |= regMasks[PIN_VALUE];
+        workingReg[STATUS] = NEW_DATA;
+        workingRegFlags |= regMasks[STATUS];
+      break;
+
+      default:
+      break;
+    }
   }
   
+  if(receiveRegFlags){
+    updateWorkingReg();
+    workingReg[STATUS] = NEW_COMMANDS;
+    workingRegFlags |= regMasks[STATUS];
+    return;
+  }
+
+  if (workingReg[STATUS] == NEW_DATA){
+    updateTransmissionReg();
+    workingReg[STATUS] = IDLE;
+    workingRegFlags |= regMasks[STATUS];
+  }
 }
 
 void updateBuiltinLed(){
   static byte state = LOW;
   static unsigned long previousMillis = 0;
-  static int interval = 1000;
-  static int duration = 1000;
+  static unsigned int interval = 1000;
+  static unsigned int duration = 1000;
 
   if(state == LOW){
     if(currentMillis - previousMillis >= interval){
@@ -179,10 +204,11 @@ void updateWorkingReg(){
   for(int i = MODE; i < REGSIZE - 2; i++){
     if(receiveRegFlags & regMasks[i]){
       workingReg[i] = receiveReg[i];
+      transmissionReg[i] = receiveReg[i];
       workingRegFlags |= regMasks[i];   // set 
       receiveRegFlags &= ~regMasks[i];  // unset
     }
-    if(!receiveRegFlags) break;
+    if(!receiveRegFlags) return; // no more flags are set
   }
 }
 
@@ -190,17 +216,18 @@ void updateWorkingReg(){
 
 void updateTransmissionReg(){
   for(int i = MODE; i < REGSIZE - 2; i++){
-    if(receiveRegFlags & regMasks[i]){
-      transmissionReg[i] = receiveReg[i];
-      receiveRegFlags &= ~regMasks[i];
+    if(workingRegFlags & regMasks[i]){
+      transmissionReg[i] = workingReg[i];
+      workingRegFlags &= ~regMasks[i];
     }
-    if(!receiveRegFlags) break;
+    if(!workingRegFlags) return; // no more flags are set
   }
 }
 
 
 //master writes to slave
 void receiveEvent(int bytes){
+  digitalWrite(6,HIGH);
   if(DEBUG) Serial.println("receive");
   for(int i = 0; i < bytes; i++){
     if(i < MAX_SENT_BYTES){
@@ -228,8 +255,8 @@ void receiveEvent(int bytes){
       if(DEBUG) Serial.println("command - mode");
       for(int i = MODE; i < bytes; i++){  // start writing from MODE
         if(i >= (REGSIZE - 2)) break;                // can't write there
-        transmissionReg[i] = received[processedBytes];                          //TODO  
-        //receiveRegFlags |= regMasks[i];                                       //TODO
+        receiveReg[i] = received[processedBytes];                          //TODO  
+        receiveRegFlags |= regMasks[i];                                       //TODO
         if(++processedBytes == bytes) break;   // nothing else to write
       }
     break;
@@ -266,18 +293,25 @@ void receiveEvent(int bytes){
 
     default:
       if(DEBUG) Serial.println("command - unknown");
-      return; // unknown commmand
+     break;// return; // unknown commmand
   }
+    digitalWrite(6,LOW);
+
 }
 
 //master reads
 void requestEvent(){
+  digitalWrite(5,HIGH);
   if(DEBUG) Serial.println("request");
-  if(workingRegFlags){
-    if(workingRegFlags & regMasks[STATUS]) transmissionReg[STATUS] = workingReg[STATUS];
-    if(workingRegFlags & regMasks[PIN_VALUE]) transmissionReg[PIN_VALUE] = workingReg[PIN_VALUE];
-    workingRegFlags = 0;
-  }
 
+  if (workingReg[STATUS] == NEW_DATA){
+    updateTransmissionReg();
+    workingReg[STATUS] = IDLE;
+    workingRegFlags |= regMasks[STATUS];
+  }
+  
   Wire.write(transmissionReg + received[0], REGSIZE);
+
+  transmissionReg[STATUS] = IDLE;
+  digitalWrite(5,LOW);
 }

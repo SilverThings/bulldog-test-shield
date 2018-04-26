@@ -50,9 +50,14 @@ byte regMasks[]{
 //etc
 
 
+
+const byte ledPin = LED_BUILTIN;  // notification
+const byte pwmPin = 5; // wrong pin in schematic
+
+
 // constants
 byte id = 0x55;         // device id
-byte i2cAddress = 0x04; // device i2c address
+byte i2cAddress = 0x33; // device i2c address
 byte version = 0x01;    // firmware version
 
 
@@ -69,6 +74,12 @@ byte receiveRegFlags = 0;
 
 
 
+// default defined outputs
+byte pwmEnabled = 1;
+byte serialEnabled = 1;
+byte uartEnabled = 1;
+
+
 
 unsigned long currentMillis = 0; // stores value of millis()
 
@@ -80,6 +91,9 @@ void requestEvent();
 void updateWorkingReg();
 void updateTransmissionReg();
 void updateBuiltinLed();
+void updatePwm();
+
+
 
 //initialization
 void setup(){
@@ -99,26 +113,29 @@ void setup(){
 
 
   // setup pins
-  pinMode(LED_BUILTIN, OUTPUT);
+  pinMode(ledPin, OUTPUT);
+
+  if (pwmEnabled) analogWrite(pwmPin, 50);
+  if (serialEnabled) Serial.begin(9600);
 
   pinMode(6,OUTPUT);//debug
   digitalWrite(6,LOW);
 
-  pinMode(5,OUTPUT);//debug
-  digitalWrite(5,LOW);
+  pinMode(7,OUTPUT);//debug
+  digitalWrite(7,LOW);
 
-  if(DEBUG){
-    pinMode(LED_BUILTIN, OUTPUT);
-    Serial.begin(9600);
-    Serial.println("setup");
-  }
+  //default outputs
+  
+  
 }
 
 void loop(){
   currentMillis = millis(); // update current time
   updateBuiltinLed();
-
+  //updatePwm();
    
+  if(serialEnabled) Serial.println("test");
+
   if(receiveRegFlags){
     updateWorkingReg();
     workingReg[STATUS] = NEW_COMMANDS;
@@ -186,16 +203,31 @@ void updateBuiltinLed(){
     if(currentMillis - previousMillis >= interval){
       state = HIGH;
       previousMillis += interval;
-      digitalWrite(LED_BUILTIN, state);
+      digitalWrite(ledPin, state);
     }
   } else { // state == HIGH
     if(currentMillis - previousMillis >= duration){
       state = LOW;
       previousMillis += duration;
-      digitalWrite(LED_BUILTIN, state);
+      digitalWrite(ledPin, state);
     }
   }
 }
+
+
+void updatePwm(){
+  static unsigned long previousMillis = 0;
+  static unsigned int interval = 200;
+  static byte value = 100;
+  static byte increment = 20;
+  if (currentMillis - previousMillis >= interval)  //test whether the period has elapsed
+  {
+    analogWrite(pwmPin, value);
+    value += increment;    //will wrap round
+    previousMillis += interval;
+  }
+}
+
 
 void updateWorkingReg(){
   if(DEBUG) Serial.println("update work reg");
@@ -211,7 +243,6 @@ void updateWorkingReg(){
     if(!receiveRegFlags) return; // no more flags are set
   }
 }
-
 
 
 void updateTransmissionReg(){
@@ -301,7 +332,7 @@ void receiveEvent(int bytes){
 
 //master reads
 void requestEvent(){
-  digitalWrite(5,HIGH);
+  digitalWrite(7,HIGH);
   if(DEBUG) Serial.println("request");
 
   if (workingReg[STATUS] == NEW_DATA){
@@ -313,5 +344,5 @@ void requestEvent(){
   Wire.write(transmissionReg + received[0], REGSIZE);
 
   transmissionReg[STATUS] = IDLE;
-  digitalWrite(5,LOW);
+  digitalWrite(7,LOW);
 }

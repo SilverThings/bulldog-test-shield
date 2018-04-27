@@ -230,7 +230,7 @@ TX
 Text Label 5300 3950 2    60   ~ 0
 RX
 Text Label 7650 3000 2    60   ~ 0
-PWM
+PWMp
 Text Label 9100 3400 0    60   ~ 0
 3V3
 Text Label 9100 3800 0    60   ~ 0
@@ -257,16 +257,14 @@ F 3 "" H 9400 3200 50  0000 C CNN
 	1    9400 3200
 	1    0    0    -1  
 $EndComp
-Text Label 5300 3200 2    60   ~ 0
-PWM
+Text Label 5300 3300 2    60   ~ 0
+PWMp
 Text Label 5300 3400 2    60   ~ 0
 GPIO17
 Text Label 6650 3000 0    60   ~ 0
 GPIO17
 Text Label 7800 3200 2    60   ~ 0
-GPIO23
-Text Label 5300 3300 2    60   ~ 0
-GPIO23
+PWMa
 Text Notes 8500 2250 2    60   ~ 0
 TX / RX based on Raspberry Pi pins
 Text Label 1550 6250 0    60   ~ 0
@@ -571,11 +569,7 @@ Wire Wire Line
 Wire Wire Line
 	9400 3700 9400 4000
 Wire Wire Line
-	4950 3200 5300 3200
-Wire Wire Line
 	7450 3200 7800 3200
-Wire Wire Line
-	4950 3300 5300 3300
 Wire Wire Line
 	1550 6250 1900 6250
 Wire Wire Line
@@ -710,4 +704,10 @@ Wire Wire Line
 	5550 6500 5900 6500
 Wire Wire Line
 	5900 6500 5900 6600
+Wire Wire Line
+	4950 4150 5300 4150
+Text Label 5300 4150 2    60   ~ 0
+PWMa
+Wire Wire Line
+	4950 3300 5300 3300
 $EndSCHEMATC

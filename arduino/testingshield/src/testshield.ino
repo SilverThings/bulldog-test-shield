@@ -46,7 +46,7 @@ byte regMasks[]{
 #define ANALOG_INPUT   0x23
 #define ANALOG_OUTPUT  0x24
 #define SPI            0x25
-#define SER            0x26
+#define UART           0x26
 //etc
 
 

@@ -1,9 +1,10 @@
 // libraries
 #include <Wire.h>
+#include <SPI.h>
 
 // REGISTERS              MASTER	SLAVE
 #define STATUS    0x00 // R		  RW
-#define MODE      0x01 // RW		R
+#define COMMAND   0x01 // RW		R
 #define PIN_NO    0x02 // RW		R
 #define PIN_VALUE 0x03 // RW		RW
 #define CONFIG    0x04 // RW		R
@@ -13,7 +14,7 @@
 
 byte regMasks[]{
   0x01, // STATUS
-  0x02, // MODE
+  0x02, // COMMAND
   0x04, // PIN_NO
   0x08, // PIN_VALUE
   0x10, // CONFIG
@@ -21,17 +22,8 @@ byte regMasks[]{
   //0x40  // VERSION
 };
 
-
-
 #define REGSIZE 7         // number of registers
 #define MAX_SENT_BYTES 5  // address byte + number of writable registers
-
-#define DEBUG 0           // enable or disable debug output
-
-
-
-//arduino values
-
 
 // status register values
 #define NEW_COMMANDS  0x11
@@ -39,20 +31,25 @@ byte regMasks[]{
 #define IDLE          0x13
 #define BUSY	        0x14
 
-// mode register values
-#define NO_MODE        0x20
-#define DIGITAL_INPUT  0x21
-#define DIGITAL_OUTPUT 0x22
-#define ANALOG_INPUT   0x23
-#define ANALOG_OUTPUT  0x24
-#define SPI            0x25
-#define UART           0x26
+// command register values
+#define NO_COMMAND    0x20
+#define DIGITAL_READ  0x21
+#define DIGITAL_WRITE 0x22
+#define ANALOG_READ   0x23
+#define ANALOG_WRITE  0x24
+#define SPI           0x25
+#define UART          0x26
+#define DEMO          0x27
+
+
+//#define INPUT         0x25 // 0x0 in arduino.h
+//#define OUTPUT        0x26 // 0x1 
 //etc
 
 
 
-const byte ledPin = LED_BUILTIN;  // notification
-const byte pwmPin = 5; // wrong pin in schematic
+const byte ledPin = 8;  // notification
+const byte pwmPin = 3; 
 
 
 // constants
@@ -64,9 +61,9 @@ byte version = 0x01;    // firmware version
 //globals
 byte received[MAX_SENT_BYTES]; // received command
 
-byte workingReg[REGSIZE - 2] = {IDLE, NO_MODE, 0, 0, 0};
-byte receiveReg[REGSIZE - 2] = {IDLE, NO_MODE, 0, 0, 0};
-byte transmissionReg[REGSIZE] = {IDLE, NO_MODE, 0, 0, 0, id, version};
+byte workingReg[REGSIZE - 2] = {IDLE, NO_COMMAND, 0, 0, 0};
+byte receiveReg[REGSIZE - 2] = {IDLE, NO_COMMAND, 0, 0, 0};
+byte transmissionReg[REGSIZE] = {IDLE, NO_COMMAND, 0, 0, 0, id, version};
 
 byte workingRegFlags = 0;
 byte receiveRegFlags = 0;
@@ -74,10 +71,10 @@ byte receiveRegFlags = 0;
 
 
 
-// default defined outputs
-byte pwmEnabled = 1;
-byte serialEnabled = 1;
-byte uartEnabled = 1;
+// demo outputs
+byte pwmEnabled;
+byte spiEnabled; 
+byte uartEnabled;
 
 
 
@@ -92,6 +89,7 @@ void updateWorkingReg();
 void updateTransmissionReg();
 void updateBuiltinLed();
 void updatePwm();
+void updateSerial();
 
 
 
@@ -107,34 +105,36 @@ void setup(){
   pinMode(19, INPUT);
   digitalWrite(19, LOW);
     
-
+  //i2c events
   Wire.onRequest(requestEvent);
   Wire.onReceive(receiveEvent);
 
 
-  // setup pins
+  //setup pins
   pinMode(ledPin, OUTPUT);
 
-  if (pwmEnabled) analogWrite(pwmPin, 50);
-  if (serialEnabled) Serial.begin(9600);
 
-  pinMode(6,OUTPUT);//debug
-  digitalWrite(6,LOW);
-
-  pinMode(7,OUTPUT);//debug
-  digitalWrite(7,LOW);
-
-  //default outputs
-  
-  
+  //demo
+  //pwm
+  pwmEnabled = 1;
+  analogWrite(pwmPin, 50);
+  //uart
+  uartEnabled = 1;
+  Serial.begin(9600);
+  //spi
+  spiEnabled = 1;
+  pinMode(MISO, OUTPUT);
+  SPCR |= _BV(SPE); // slave mode
+  SPCR |= _BV(SPIE); //interrupts  
 }
 
 void loop(){
   currentMillis = millis(); // update current time
   updateBuiltinLed();
-  //updatePwm();
+  
+  //if(pwmEnabled) updatePwm();
    
-  if(serialEnabled) Serial.println("test");
+  if(uartEnabled) updateSerial();
 
   if(receiveRegFlags){
     updateWorkingReg();
@@ -145,34 +145,113 @@ void loop(){
   
     
   if (workingReg[STATUS] == NEW_COMMANDS){
-    switch(workingReg[MODE]){
-      case DIGITAL_OUTPUT:
+    switch(workingReg[COMMAND]){
+      case OUTPUT:
         pinMode(workingReg[PIN_NO], OUTPUT);
+        workingReg[STATUS] = IDLE;
+        workingRegFlags |= regMasks[STATUS];
+      break;
+
+      case INPUT:
+        pinMode(workingReg[PIN_NO], INPUT);
+        workingReg[STATUS] = IDLE;
+        workingRegFlags |= regMasks[STATUS];
+      break;
+
+      case DIGITAL_WRITE:
         digitalWrite(workingReg[PIN_NO], workingReg[PIN_VALUE]);
         workingReg[STATUS] = IDLE;
         workingRegFlags |= regMasks[STATUS];
       break;
 
-      case DIGITAL_INPUT:
-        pinMode(workingReg[PIN_NO], INPUT);
+      case DIGITAL_READ:
         workingReg[PIN_VALUE] = digitalRead(workingReg[PIN_NO]);
         workingRegFlags |= regMasks[PIN_VALUE];
         workingReg[STATUS] = NEW_DATA;
         workingRegFlags |= regMasks[STATUS];
       break;
 
-      case ANALOG_OUTPUT:
+      case ANALOG_WRITE:
         analogWrite(workingReg[PIN_NO], workingReg[PIN_VALUE]);
         workingReg[STATUS] = IDLE;
         workingRegFlags |= regMasks[STATUS];
       break;
 
-      case ANALOG_INPUT:
-        workingReg[PIN_VALUE] = (byte) (analogRead(workingReg[PIN_NO]) >> 2); // analogRead returns 10bit int, shift this by two
+      case ANALOG_READ:
+        workingReg[PIN_VALUE] = (byte) (analogRead(workingReg[PIN_NO]) >> 2); // divide by four to get byte
         workingRegFlags |= regMasks[PIN_VALUE];
         workingReg[STATUS] = NEW_DATA;
         workingRegFlags |= regMasks[STATUS];
       break;
+
+      case SPI:  // spi is currently always active 
+        if (workingReg[PIN_VALUE] == 0){
+           if (spiEnabled == 1){
+             spiEnabled = 0;
+             SPCR &= 0b10111111;         
+           } 
+        }
+        else {
+           if (!spiEnabled){
+             spiEnabled = 1;
+             pinMode(MISO, OUTPUT);
+             SPCR |= _BV(SPE); // slave mode
+             SPCR |= _BV(SPIE); //interrupts
+           } 
+        }
+      break;
+
+      case UART:
+        if (workingReg[PIN_VALUE] == 0){
+           if(uartEnabled == 1)
+           {
+             uartEnabled = 0;
+             Serial.end();
+           }
+        }
+        else {
+           if (!uartEnabled){
+             uartEnabled = 1;
+             Serial.begin(9600);
+           } 
+        }
+      break;
+
+      case DEMO:
+        if (workingReg[PIN_VALUE] == 0)
+        {
+           if(uartEnabled == 1)
+           {
+             uartEnabled = 0;
+             Serial.end();
+           }
+           
+           if(pwmEnabled == 1)
+           {
+             pwmEnabled = 0;
+             pinMode(pwmPin, INPUT);
+           }
+
+           if (spiEnabled == 1){
+             spiEnabled = 0;         
+           } 
+        } 
+        else
+        {
+           if (!uartEnabled){
+             uartEnabled = 1;
+             Serial.begin(9600);
+           } 
+
+           if (!pwmEnabled){
+             pwmEnabled = 1;
+             analogWrite(pwmPin, 50);
+           }
+
+           if (!spiEnabled){
+             spiEnabled = 1;
+           } 
+        }
 
       default:
       break;
@@ -229,11 +308,21 @@ void updatePwm(){
 }
 
 
+void updateSerial(){
+  static unsigned long previousMillis = 0;
+  static unsigned int interval = 1000;
+  if (currentMillis - previousMillis >= interval)  //test whether the period has elapsed
+  {
+    Serial.println("test");
+    previousMillis += interval;
+  }
+}
+
+
 void updateWorkingReg(){
-  if(DEBUG) Serial.println("update work reg");
   workingRegFlags = 0; // data in working regs is no longer valid
 
-  for(int i = MODE; i < REGSIZE - 2; i++){
+  for(int i = COMMAND; i < REGSIZE - 2; i++){
     if(receiveRegFlags & regMasks[i]){
       workingReg[i] = receiveReg[i];
       transmissionReg[i] = receiveReg[i];
@@ -246,7 +335,7 @@ void updateWorkingReg(){
 
 
 void updateTransmissionReg(){
-  for(int i = MODE; i < REGSIZE - 2; i++){
+  for(int i = COMMAND; i < REGSIZE - 2; i++){
     if(workingRegFlags & regMasks[i]){
       transmissionReg[i] = workingReg[i];
       workingRegFlags &= ~regMasks[i];
@@ -258,8 +347,7 @@ void updateTransmissionReg(){
 
 //master writes to slave
 void receiveEvent(int bytes){
-  digitalWrite(6,HIGH);
-  if(DEBUG) Serial.println("receive");
+
   for(int i = 0; i < bytes; i++){
     if(i < MAX_SENT_BYTES){
       received[i] = Wire.read();
@@ -269,12 +357,10 @@ void receiveEvent(int bytes){
     }
   }
 
-  if(DEBUG) for(int i = 0; i < bytes; i++) Serial.println(received[i]);
-
 
   if(bytes == 1){ // master is requesting data from register
     if(received[0] >= REGSIZE) received[0] = 0x00; // if register is out of range
-    if(DEBUG) Serial.println("only one byte");
+    digitalWrite(6,LOW);
     return;
   } 
   
@@ -282,18 +368,16 @@ void receiveEvent(int bytes){
   receiveRegFlags = 0;
 
   switch(received[0]){
-    case MODE: // 0x01      
-      if(DEBUG) Serial.println("command - mode");
-      for(int i = MODE; i < bytes; i++){  // start writing from MODE
+    case COMMAND: // 0x01      
+      for(int i = COMMAND; i < bytes; i++){  // start writing from COMMAND
         if(i >= (REGSIZE - 2)) break;                // can't write there
-        receiveReg[i] = received[processedBytes];                          //TODO  
-        receiveRegFlags |= regMasks[i];                                       //TODO
+        receiveReg[i] = received[processedBytes];      
+        receiveRegFlags |= regMasks[i];           
         if(++processedBytes == bytes) break;   // nothing else to write
       }
     break;
 
     case PIN_NO: // 0x02
-      if(DEBUG) Serial.println("command - pin no");
       for(int i = PIN_NO; i < bytes; i++){
         if(i >= (REGSIZE - 2)) break;
         receiveReg[i] = received[processedBytes];
@@ -303,7 +387,6 @@ void receiveEvent(int bytes){
     break;
 
     case PIN_VALUE: // 0x03
-      if(DEBUG) Serial.println("command - pin value");
       for(int i = PIN_VALUE; i < bytes; i++){
         if(i >= (REGSIZE - 2)) break;
         receiveReg[i] = received[processedBytes];
@@ -313,7 +396,6 @@ void receiveEvent(int bytes){
     break;
 
     case CONFIG: // 0x04
-      if(DEBUG) Serial.println("command - config");
       for(int i = CONFIG; i < bytes; i++){
         if(i >= (REGSIZE - 2)) break;
         receiveReg[i] = received[processedBytes];
@@ -323,18 +405,12 @@ void receiveEvent(int bytes){
     break;
 
     default:
-      if(DEBUG) Serial.println("command - unknown");
      break;// return; // unknown commmand
   }
-    digitalWrite(6,LOW);
-
 }
 
 //master reads
 void requestEvent(){
-  digitalWrite(7,HIGH);
-  if(DEBUG) Serial.println("request");
-
   if (workingReg[STATUS] == NEW_DATA){
     updateTransmissionReg();
     workingReg[STATUS] = IDLE;
@@ -344,5 +420,14 @@ void requestEvent(){
   Wire.write(transmissionReg + received[0], REGSIZE);
 
   transmissionReg[STATUS] = IDLE;
-  digitalWrite(7,LOW);
 }
+
+// SPI interrupt
+ISR (SPI_STC_vect)
+{ 
+  workingReg[PIN_VALUE] = SPDR;
+  workingRegFlags |= regMasks[PIN_VALUE];
+  workingReg[STATUS] = NEW_DATA;
+  workingRegFlags |= regMasks[STATUS];
+} 
+
